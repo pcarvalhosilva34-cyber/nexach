@@ -1,0 +1,86 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin - NEXACH</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid;
+      place-items: center; background: #101010;
+      color: white; font-family: Arial, sans-serif; padding: 20px;
+    }
+    .card {
+      width: 100%; max-width: 380px; padding: 28px;
+      background: #1d1d1d; border: 1px solid #333;
+      border-radius: 16px;
+    }
+    h1 { color: #ffd400; text-align: center; }
+    p { color: #bbb; text-align: center; }
+    input, button {
+      width: 100%; padding: 14px; margin-top: 12px;
+      border-radius: 8px; font-size: 16px;
+    }
+    input { background: #111; color: white; border: 1px solid #555; }
+    button {
+      background: #ffd400; color: #111; border: 0;
+      font-weight: bold; cursor: pointer;
+    }
+    #message { min-height: 24px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>NEXACH</h1>
+    <p>Painel administrativo</p>
+    <form id="login-form">
+      <input id="email" type="email" placeholder="Seu e-mail" required>
+      <input id="password" type="password" placeholder="Sua senha" required>
+      <button type="submit">Entrar</button>
+    </form>
+    <p id="message" role="status"></p>
+  </main>
+
+  <script>
+    const SUPABASE_URL = "https://lqrlrdhhtvvwnwkmujsk.supabase.co/rest/v1/";
+    const SUPABASE_ANON_KEY = "sb_publishable_PKoqGoSNcloZbcZO9Ai9gw_QyETqZrT";
+
+    const client = window.supabase.createClient(
+      SUPABASE_URL, SUPABASE_ANON_KEY
+    );
+
+    document.getElementById("login-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const message = document.getElementById("message");
+      message.textContent = "Verificando acesso...";
+
+      const { data, error } = await client.auth.signInWithPassword({
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value
+      });
+
+      if (error) {
+        message.textContent = "Não foi possível entrar. Confira seus dados.";
+        return;
+      }
+
+      const { data: admin, error: adminError } = await client
+        .from("admin_users")
+        .select("user_id")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+
+      if (adminError || !admin) {
+        await client.auth.signOut();
+        message.textContent = "Esta conta não tem permissão de administrador.";
+        return;
+      }
+
+      message.textContent = "Login confirmado! Vamos preparar o painel.";
+    });
+  </script>
+</body>
+</html>
